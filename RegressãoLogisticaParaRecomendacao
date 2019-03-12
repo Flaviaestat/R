@@ -1,0 +1,53 @@
+Base <- read.csv("E:/01 - Flávia/02 - Planejamento Modelos/Bases para teste/base_recom_teste.csv", sep = ";")
+
+cpf <- Base$CPF
+Base$CATEGORY <- paste0("F_", Base$CATEGORY) #idCategory as string
+afinity <- Base$AFFINITY
+
+#install.packages("reshape")
+library("reshape")
+pivot_Base <- cast(Base, CPF ~ CATEGORY, mean, na.rm=TRUE, value="AFFINITY") #cast( [base], [chave ~ variavel que vai virar coluna])
+pivot_Base <- replace(pivot_Base, is.na(pivot_Base), 0) #recode Nan to zero
+colunas_base <- pivot_Base[2:21] #only categories without customerId
+Base_Marcada <- data.frame() #empty dataframe to be filled with scores
+
+#LOOP para modelo logístico
+for(i in 2:length(colunas_base))
+{ 
+  Cat_Flag <- ifelse(pivot_Base[i]>0,1,0) #turning response variable into a indicator
+  colnames(Cat_Flag) <- c("Cat_Flag") #renaming the column
+  resposta <- colnames(Cat_Flag) #response variable
+  excluded_vars <- c(resposta, "CPF", colnames(pivot_Base[i])) #seting response and idcustomer as not explanatory
+  explicativas <- pivot_Base[,!(names(pivot_Base)%in% excluded_vars)] #all category explanatory variables excluding Customerid
+  explicativas2 <- colnames(explicativas) #leaving only colunm names
+  short.form=noquote(paste(resposta,"~ ",paste(explicativas2,collapse=" + "))) #formula as text
+  short.form2 <- as.formula(short.form) #final model formula (response vs all other variables)
+  Model <- glm(short.form2, family = binomial, data = as.data.frame(pivot_Base)) #glm model
+  Scores <- as.data.frame(predict(Model, pivot_Base, type = 'response' )) #saving scores
+  categ_name <- as.data.frame(colnames(pivot_Base[i])) 
+  Base_Marcada_New <- cbind(pivot_Base$CPF, Scores, categ_name) 
+  colnames(Base_Marcada_New) <- c("CustomerId", "Scores", "Categ_name")
+  Base_Marcada <- rbind(Base_Marcada, Base_Marcada_New)   
+ }
+
+Base_Marcada2 <- sqldf("SELECT CustomerId, Categ_Name, Scores FROM Base_Marcada ORDER BY CustomerId ASC, Scores DESC")
+rec_table_rank<-transform(Base_Marcada2, RANK= ave(Scores, CustomerId ,FUN=function(x) order(x,decreasing=T)))
+rec_table_rank2 <- sqldf("SELECT CustomerId, Categ_Name, RANK FROM rec_table_rank")
+rec_table_rank3 <- merge(x =rec_table_rank2 , y =  Base,  by.x = c("CustomerId","Categ_name"),  by.y = c("CPF","CATEGORY"), all.x = TRUE)
+rec_table_rank3 <- replace(rec_table_rank3, is.na(rec_table_rank3), 0)
+
+#Evaluating precision and recall
+F_recomend <- as.data.frame(ifelse(rec_table_rank3$RANK<= 5, 1 , 0)) #Recomendation evaluated as top 5
+colnames(F_recomend) <- c("F_recomend")
+F_preferred <- as.data.frame(ifelse(rec_table_rank3$AFFINITY>0, 1 , 0))
+colnames(F_preferred) <- c("F_preferred")
+eval_table <- cbind(F_preferred, F_recomend)
+eval_table2 <- table(eval_table)
+tot_recomend =  eval_table2[1,2] + eval_table2[2,2]
+precision =  eval_table2[2,2] / (eval_table2[1,2] + eval_table2[2,2])
+recall =  eval_table2[2,2] / (eval_table2[2,1] + eval_table2[2,2])
+F1 <- (2 * precision * recall) / (precision + recall) #between 0 and 1 (better)
+
+library("reshape2")
+rec_Category <- dcast(rec_table_rank2, CustomerId ~ RANK, value.var = "Categ_name")
+write.csv(Base_Marcada, 'E:/01 - Flávia/02 - Planejamento Modelos/Bases para teste/Customers with Scores.csv')
