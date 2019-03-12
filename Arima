@@ -1,0 +1,37 @@
+*modelo autoregressivo*
+
+Modelo1<-ar(Venda_22, aic = TRUE, order.max = NULL)
+Modelo2<-ar(Venda_22, aic = FALSE, order.max = 7)
+
+
+x<-predict(Modelo2, n.ahead = 35, se.fit = FALSE,newxreg=35)
+y<-as.matrix(x)
+fix(y)
+
+x<-predict(Modelo1, n.ahead = 35, se.fit = FALSE,newxreg=35)
+y<-as.matrix(x)
+fix(y)
+
+**O primeiro modelo é infinitamente superior**
+
+**Fazendo modelo para prever março **.
+Loja22_novo <- as.matrix(read.table("Loja22_novo.txt",dec = ",", header = TRUE, row.names = 1, sep=""))
+Venda_22_novo<-Loja22_novo[,1]
+Modelo3<-ar(Venda_22_novo, aic = TRUE, order.max = NULL)
+as.matrix(predict(Modelo3, n.ahead = 40, se.fit = FALSE))
+acf(Venda_22_novo)
+
+
+
+**** Novos testes ***.
+
+auto.arima(Venda_22)
+Modelo5<-arima(Venda_22, order=c(2,1,5))
+y<-as.matrix(predict(Modelo5, n.ahead = 40, se.fit = FALSE))
+
+
+
+
+*** previsão para quando incluir regressores ***.
+predict(object, n.ahead = 1, newxreg = NULL,
+        se.fit = TRUE, ...)
