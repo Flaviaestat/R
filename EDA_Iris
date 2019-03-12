@@ -1,0 +1,106 @@
+#ANALISE EXPLORATORIA DE DADOS#
+
+#Load the iris data set
+
+data(iris)
+head(iris)
+
+summary(iris)
+
+mean(iris$Sepal.Length)
+sd(iris$Sepal.Length)
+
+#Ignor missing values (Note: this data does not contain any, but this is what you would do)
+mean(iris$Sepal.Length, na.rm = TRUE)
+
+#Robust mean (trim 10% of observations from each end of the distribution)
+mean(iris$Sepal.Length, trim = .1)
+
+
+#Apply mean, sd and median to columns (MARGIN=2)
+
+#mean / sd / var / min / max 
+
+apply(iris[1:4], MARGIN=2, mean)4
+
+#aggregate per group
+aggregate(Sepal.Length ~ Species, data=iris, FUN = mean)
+
+
+
+#funcao
+mad <- function(x) median(abs(x-mean(x)))
+apply(iris[1:4], MARGIN=2, mad)
+
+
+#Discretizando a base
+iris_discrete <- data.frame(
+  Sepal.Length= cut(iris$Sepal.Length, breaks=3,
+                    labels=c("small", "medium", "large"), ordered=TRUE),
+  Sepal.Width= cut(iris$Sepal.Width, breaks=3,
+                   labels=c("small", "medium", "large"), ordered=TRUE),
+  Petal.Length= cut(iris$Petal.Length, breaks=3,
+                    labels=c("small", "medium", "large"), ordered=TRUE),
+  Petal.Width= cut(iris$Petal.Width, breaks=3,
+                   labels=c("small", "medium", "large"), ordered=TRUE),
+  Species = iris$Species
+)
+
+#cross tabulation
+table(iris_discrete$Sepal.Length, iris_discrete$Sepal.Width)
+
+#Test if the two features are independent given the counts in the contingency table (H0: independence)
+#p-value: the probability of seeing a more extreme value of the test statistic under the assumption that H0 is correct. Low p-values (typically less than .05 or .01) indicate that H0 should be rejected.
+
+tbl <- table(iris_discrete$Sepal.Length, iris_discrete$Sepal.Width)
+chisq.test(tbl)
+
+#Fisher’s exact test is better for small counts (cells with counts <5)
+  
+fisher.test(tbl)
+
+
+#BARPLOT
+barplot(table(iris_discrete$Sepal.Length))
+
+
+#PERCENTILES
+apply(iris[1:4], MARGIN=2, quantile)
+quantile(iris$Petal.Length)
+
+
+#HISTOGRAM
+hist(iris$Petal.Width)
+hist(iris$Petal.Width, breaks=20, col="grey")
+
+#SCATTERPLOT
+plot(x=iris$Petal.Length, y=iris$Petal.Width, col=iris$Species)
+
+
+#VARIOS SCATTERPLOTS
+pairs(iris, col=iris$Species) #DIFERENT COLOR IN SPECIES
+pairs(iris)
+pairs(~ iris$Species + iris$Petal.Length ,  data = iris )
+#      , subset = Education < 20, main = "Swiss data, Education < 20")
+
+
+library("GGally")
+ggpairs(iris,  ggplot2::aes(colour=Species))
+
+#boxplot
+boxplot(iris[,1:4])
+
+
+#Correlation matrix
+#Calculate and visualize the correlation between features
+
+cm1 <- cor(iris_matrix)
+
+
+library(corrplot)
+## corrplot 0.84 loaded
+corrplot(cm1, method="ellipse")
+
+#Test if correlation is significantly different from 0
+
+cor.test(iris$Sepal.Length, iris$Sepal.Width)
