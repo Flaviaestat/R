@@ -1,0 +1,110 @@
+
+#******* Conectando a base *********
+library(RODBC)
+conn <- odbcConnect(dsn="RJD10_ORA", uid="RERAZO", pwd="RERAZO")
+base_saz <- sqlQuery(conn, "SELECT * FROM FL_BASE_MODELO_SAZONALIZACAO")
+
+
+library(sqldf)
+base_saz <- sqldf("SELECT * FROM base_saz WHERE CONSOLID NOT IN ('_10_N',
+                  '_10_S','_20_N','_20_S','_30_N','_30_S',
+                  '_40_N','_40_S','_50_N','_50_S','_60_N','_60_S',
+                  '_70_N','_70_S','_80_N','_80_S','_90_N','_91_S','_92_N','_92_S')")
+
+base_saz <- sqldf("SELECT * FROM base_saz WHERE CONSOLID NOT LIKE '%91%' ")
+base_saz <- sqldf("SELECT * FROM base_saz WHERE CONSOLID NOT LIKE '%AICP_90%' ")
+
+#******* Criando vars *********
+lndolar <- log(base_saz$DOLAR)
+lnvendas <- log(base_saz$VENDAS)
+
+base_saz <- cbind(lndolar, base_saz)
+base_saz <- cbind(lnvendas, base_saz)
+
+
+nome_consolid <- as.character(unique(base_saz$CONSOLID))
+
+
+#******* Loop para modelagem *******
+  
+
+base_coef <- data.frame()
+
+for(i in 1:length(nome_consolid)) {
+
+base <- subset(base_saz, base_saz$CONSOLID %in% nome_consolid[i])
+
+if(dim(base)[1] >= 24) #
+  {
+    
+Modelo <- lm(base$lnvendas  ~ base$lndolar + as.factor(base$CARNAVAL) + as.factor(base$MES) + as.factor(base$ANO) )
+num <- dim(as.data.frame(Modelo$coefficients))[1]  #conta num variaveis
+base_nome <- as.data.frame(rep( nome_consolid[i] ,  num  )) # cria var com nome
+
+
+#Para acertar o nome dos coeficientes
+depara_coef1 <- c(
+  '(Intercept)',
+  'base$lndolar',
+  'as.factor(base$CARNAVAL)1',
+  'as.factor(base$MES)1',
+  'as.factor(base$MES)2',
+  'as.factor(base$MES)3',
+  'as.factor(base$MES)4',
+  'as.factor(base$MES)5',
+  'as.factor(base$MES)6',
+  'as.factor(base$MES)7',
+  'as.factor(base$MES)8',
+  'as.factor(base$MES)9',
+  'as.factor(base$MES)10',
+  'as.factor(base$MES)11',
+  'as.factor(base$MES)12',
+  'as.factor(base$ANO)2012',
+  'as.factor(base$ANO)2013',
+  'as.factor(base$ANO)2014',
+  'as.factor(base$ANO)2015')
+
+
+depara_coef2 <- c(
+  'INTERCEPTO',
+  'DOLAR',
+  'CARNAVAL',
+  'F_JAN',
+  'F_FEV',
+  'F_MAR',
+  'F_ABR',
+  'F_MAI',
+  'F_JUN',
+  'F_JUL',
+  'F_AGO',
+  'F_SET',
+  'F_OUT',
+  'F_NOV',
+  'F_DEZ',
+  'F_2012',
+  'F_2013',
+  'F_2014',
+  'F_2015')
+
+depara_coef <- cbind(depara_coef1, depara_coef2)
+
+
+
+coef <- as.data.frame(Modelo$coefficients)
+nome_linha <- as.data.frame(rownames(coef))
+coef <- cbind(coef, nome_linha)
+colnames(coef) <- c("Coeficiente", "Variavel")
+label_coef <- merge(x =coef , y =  depara_coef,  by.x = "Variavel",  by.y = "depara_coef1", all.x = TRUE)
+
+base_coef_in <- cbind(base_nome, label_coef  ) # junta nome e valor do coef
+base_coef <- rbind(base_coef, base_coef_in ) # apenda todos os coeficientes
+
+}  }
+
+
+colnames(base_coef) <- c("Consolid", "Variavel2", "Coeficiente", "Variavel")
+
+
+library(xlsx)
+write.xlsx(base_coef, 'W:\\Orçamentos\\2016\\Projeto\\Base_Coef.xlsx')
+
