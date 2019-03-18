@@ -1,0 +1,44 @@
+
+## Manipulação de texto no R.
+
+1. Selecionar o primeiro nome:
+	nome=c("Fulano Marques Santos", "Cilano da Silva Alves")
+  pri_nome = sub(" .*", "",nome)
+
+2. Retirar espaçamento do ínicio e fim do texto
+	nome=c(" Fulano Marques Santos      ", "    Cilano da Silva Alves ")
+  # Esqueda
+  nome.concertado <- sub(" +$", "", nome);nome.concertado
+	# Direita
+  nome.concertado <- sub("[[:space:]]*", "", nome);nome.concertado
+  #Direira/Esqueda
+  nome.concertado <- sub(" +$", "",sub("[[:space:]]*", "", nome));nome.concertado
+
+3. Selecionar texto a parti de um caracter qualquer
+	email <- c("Fulando.santos@gmail.com", "ciclano_silca@yhaoo.com.br")
+	provedor <- sub(".*@","@",email)
+
+4. Substituir caracter ou texto
+	nome <- c("_Fulano Marques Santos", "Cilano// da Silva Alves")
+	nome.concertado <- gsub("_","",nome);nome.concertado
+  nome.concertado <- gsub("/","",nome);nome.concertado
+
+5. Maiusculo/Minusculo
+	nome <-c("Fulano Marques Santos", "Cilano da Silva Alves")
+  toupper(nome)
+	email <- c("FULANO.SANTOS@GMAIL.COM","CICLANO_SILVA@YHOO.COM.BR")
+	tolower(email)
+
+6. Filtrar dados com base em uma palavra 
+# Retorna o índice da linha que contem aquela palavra. 
+	nome <-c("Fulano Marques Santos", "Cilano da Silva Alves","Marques Santos")
+  grep("Santos", nome)
+  
+
+###############################################################################
+
+texto <- unlist(strsplit('Deus abencoou Noe e seus filhos, e lhes disse: "Sede fecundos, multiplicai-vos, enchei a terra. Sede o medo e o pavor de todos os animais da terra e de todas as aves do ceu, como de tudo o que se move na terra e de todos os peixes do mar: eles sao entregues nas vossas maos. Tudo o que se move e possui a vida vos servira de alimento, tudo isso eu vos dou, como vos dei a verdura das plantas. Mas nao comereis a carne com sua alma, isto e, o sangue. Pedirei contas porem, do sangue de cada um de vos. Pedirei contas a todos os animais e ao homem, aos homens entre si, eu pedirei contas da alma do homem. Quem derrama o sangue do homem pelo homem terra seu sangue derramado. Pois a imagem de Deus o homem foi feito. Quanto a vos, sede fecundos, multiplicai-vos, povoai a terra e dominai-a.', ". ", fixed = TRUE))
+substring(texto, 1) <- c(tolower(substring(texto, 1,1)))
+cat(texto, sep=". ")
+
+texto
