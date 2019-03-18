@@ -1,0 +1,36 @@
+
+#CARREGANDO A BASE
+Rondonia <- read.csv("E:/01 - FlÃ¡via/02 - Planejamento Modelos/Bases para teste/Rondonia_Teste.csv", sep = ";", dec = ",")
+Rondonia <- replace(Rondonia, is.na(Rondonia), 0) #recode Nan to zero
+Rondonia_cluster <- sqldf("SELECT agro, ind, serv, impostos, pib, pop, AREA from Rondonia")
+Base_std <- scale(Rondonia_cluster) #standardize all variables 
+
+library("cluster")
+
+#TESTE CLUSTER HIERARQUICO
+d <- dist(Base_std, method = "euclidean") # 2. Compute dissimilarity matrix
+d <- replace(d, is.na(d), 0) #recode Nan to zero
+res.hc <- hclust(d, method = "ward.D2" ) # Hierarchical clustering using Ward's method
+grp <- cutree(res.hc, k = 7)
+Rondonia_groups <- cbind(Rondonia, as.data.frame(grp))
+Rondonia_medias <- sqldf("SELECT grp, count(*) as num_cli, avg(agro) as agro, avg(ind) as ind, avg(serv) as serv, avg(impostos) as impostos, avg(pib) as pib, avg(pop) as pop, avg(AREA) as AREA from Rondonia_groups group by grp")
+dist_cluster <- dist(Rondonia_medias, method = "canberra")
+sil <- silhouette(grp, d)
+
+#percentis de cada grupo do cluster
+for(i in 1:length(Rondonia_cluster))
+{percentiles <- tapply(Rondonia_cluster[,i], Rondonia_groups$grp, summary)
+msg <- paste0("resuls for cluster: ", colnames(Rondonia_cluster[i]) )
+message(msg)
+print(percentiles)
+}
+
+#TESTE KMEANS
+centers <- kmeans(Base_std, 5, nstart=20)
+grp2 <- centers$cluster
+Rondonia_groups2 <- cbind(Rondonia, as.data.frame(grp2))
+Rondonia_medias2 <- sqldf("SELECT grp2, count(*) as num_cli, avg(agro) as agro, avg(ind) as ind, avg(serv) as serv, avg(impostos) as impostos, avg(pib) as pib, avg(pop) as pop, avg(AREA) as AREA from Rondonia_groups2 group by grp2")
+
+Valid <- cbind(Rondonia$MunicÃ­pio, Rondonia_cluster, grp, grp2 )
+valid2 <- subset(Valid, grp2 %in% 5)
+sqldf("SELECT grp, count(*) as num_cli, avg(agro) as agro, avg(ind) as ind, avg(serv) as serv, avg(impostos) as impostos, avg(pib) as pib, avg(pop) as pop, avg(AREA) as AREA from valid2 group by grp")
