@@ -1,0 +1,56 @@
+##
+## Text Mining - Serviços
+##
+
+## Pacotes
+rm(list = ls())
+library(tau)
+source('Y:/02 - DataBase Marketing/13 - InputCadastros/Programas/Sintaxe de Apoio R/Funcoes_textMining.R')
+
+
+## Abrir a Base ----
+##setwd("Y:/Glaucio/TST_textMining/Novo TextMining/")
+
+##df<- read.delim2("pulso.txt",encoding ="UTF-8" )
+##names(df) <- gsub("X..","",names(df))
+
+## abrir base CSV direto da pasta do pulso
+setwd("Y:/Glaucio/TST_textMining/Novo TextMining/")
+df <- read.csv2("Sugestao_Pesquisa.txt")
+names(df) <- "NAOgostou"
+
+#
+#   Função para Analise descritiva das Vairaveis  ------
+#
+
+# Modo do grafico
+ par(mfrow=c(1,2))
+
+
+# Algo q gostou
+ df$gostou <- palavrasLigacao(df$houve_algo_gostado_comentario)
+ df$gostou <- padronizarReserva(df$gostou) 
+ df$gostou <- padronizarFalta(df$gostou)
+ df$gostou <- padronizarAtendimento(df$gostou)
+ textoGraf(df$gostou,2,25,"Houve algo que gostou?")
+ 
+# Algo q NÂO  gostou
+ df$NAOgostou <- palavrasLigacao(df$NAOgostou)
+ df$NAOgostou <- padronizarReserva(df$NAOgostou)
+ df$NAOgostou <- padronizarFalta(df$NAOgostou)
+ df$NAOgostou <- padronizarAtendimento(df$NAOgostou)
+ textoGraf(df$NAOgostou,2,25,"Houve algo que NÃO gostou?")
+ 
+ df$v1 <- padronizarAtendimento(df$houve_algo_NAO_gostado_comentario)
+
+library(wordcloud)
+ out <- textcnt(x = df$NAOgostou[nchar(df$NAOgostou) > 1], tolower = TRUE,
+                method = "string", n = 1, decreasing = TRUE)
+ 
+ wordcloud(names(out), freq = out,
+          scale = c(10,.75), min.freq = 10,
+          max.words = 100, rondom.order = FALSE,
+          colors = brewer.pal(6,"Dark2"))
+
+library(graph)
+library(Rgraphviz)
