@@ -1,0 +1,28 @@
+#SAFRA - RECUPERACAO - NAO CONTATAVEIS campaign 2019-07
+alvo = 15512482
+controle = 1725384
+
+num_testes = 10000
+
+#media do Spending do Controle
+media1 = 170
+media2 = 170
+
+#desvios padrão de 5% da media
+sd1 = media1 * 0.05
+sd2 = media2 * 0.05
+
+vectorResults <- c()
+
+for(i in 1:num_testes) {
+  
+  distAlvo = rnorm(alvo, mean=media1, sd=sd1)
+  distControle = rnorm(controle, mean=media2, sd=sd2)
+  #teste = t.test(distControle,distAlvo,paired=FALSE)
+  perc <- distAlvo / distControle - 1
+  vectorResults <- cbind(vectorResults, perc)
+}
+
+
+
+hist(vectorResults)
